@@ -3,11 +3,11 @@
 
 import { z } from "zod"
 import { parse } from "cookie"
-import { cookies } from "next/headers"
 import { JwtPayload } from "jsonwebtoken"
 import jwt from "jsonwebtoken"
 import { redirect } from "next/navigation"
 import { getDefaultDashboardRoute, isValidRedirectForRole, UserRole } from "@/lib/auth-utils"
+import { setCookie } from "./tokenHandlers"
 
 const loginValidationZodSchema = z.object({
     email: z.email({
@@ -49,6 +49,8 @@ export const loginUser = async (_currentState: any, fromData: any) => {
             }
         })
 
+        const result = await res.json()
+
         const setCookieHeaders = res.headers.getSetCookie()
 
         if (setCookieHeaders && setCookieHeaders.length > 0) {
@@ -74,16 +76,14 @@ export const loginUser = async (_currentState: any, fromData: any) => {
             throw new Error("Tokens not found in cookies")
         }
 
-        const cookieStore = await cookies()
-
-        cookieStore.set("accessToken", accessTokenObj.accessToken, {
+        await setCookie("accessToken", accessTokenObj.accessToken, {
             secure: true,
             httpOnly: true,
             maxAge: parseInt(accessTokenObj["Max-Age"]),
             path: accessTokenObj.Path || "/",
             sameSite: accessTokenObj.SameSite
         })
-        cookieStore.set("refreshToken", refreshTokenObj.refreshToken, {
+        await setCookie("refreshToken", refreshTokenObj.refreshToken, {
             secure: true,
             httpOnly: true,
             maxAge: parseInt(refreshTokenObj["Max-Age"]),
@@ -99,6 +99,10 @@ export const loginUser = async (_currentState: any, fromData: any) => {
 
         const userRole: UserRole = verifiedToken.role
 
+        if (!result.success) {
+            throw new Error(result.message || "Login failed")
+        }
+
         if (redirectTo) {
             const requestedPath = redirectTo.toString();
             if (isValidRedirectForRole(requestedPath, userRole)) {
@@ -106,6 +110,8 @@ export const loginUser = async (_currentState: any, fromData: any) => {
             } else {
                 redirect(getDefaultDashboardRoute(userRole))
             }
+        } else {
+            redirect(getDefaultDashboardRoute(userRole))
         }
 
     } catch (error: any) {
