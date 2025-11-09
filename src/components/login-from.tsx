@@ -8,7 +8,7 @@ import { loginUser } from '@/services/auth/loginUser';
 
 const LoginFrom = ({ redirect }: { redirect?: string }) => {
   const [state, fromAction, isPending] = useActionState(loginUser, null);
-
+  console.log('state', state);
   const getFieldError = (fieldName: string) => {
     if (state && state.errors) {
       const error = state.errors.find(

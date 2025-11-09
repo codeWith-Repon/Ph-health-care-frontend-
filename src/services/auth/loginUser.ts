@@ -51,30 +51,26 @@ export const loginUser = async (_currentState: any, fromData: any) => {
 
         const result = await res.json()
 
-        const setCookieHeaders = res.headers.getSetCookie()
-
-        if (setCookieHeaders && setCookieHeaders.length > 0) {
-            setCookieHeaders.forEach((cookie) => {
-                const parsedCookie = parse(cookie)
-
-                if (parsedCookie.accessToken) {
-                    accessTokenObj = parsedCookie
-                }
-
-                if (parsedCookie.refreshToken) {
-                    refreshTokenObj = parsedCookie
-                }
-            })
-        } else {
-            throw new Error("No Set-cookie header found")
+        if (!result.success) {
+            throw new Error(result.message || "Invalid email or password");
         }
 
-        if (!accessTokenObj) {
-            throw new Error("Tokens not found in cookies")
+        const setCookieHeaders = res.headers.getSetCookie();
+
+        if (!setCookieHeaders) {
+            throw new Error("No Set-Cookie header found in response");
         }
-        if (!refreshTokenObj) {
-            throw new Error("Tokens not found in cookies")
+
+        for (const cookie of setCookieHeaders) {
+            const parsed = parse(cookie);
+            if (parsed.accessToken) accessTokenObj = parsed;
+            if (parsed.refreshToken) refreshTokenObj = parsed;
         }
+
+        if (!accessTokenObj || !refreshTokenObj) {
+            throw new Error("Missing authentication tokens in cookies");
+        }
+
 
         await setCookie("accessToken", accessTokenObj.accessToken, {
             secure: true,
@@ -93,15 +89,11 @@ export const loginUser = async (_currentState: any, fromData: any) => {
 
         const verifiedToken: string | JwtPayload = jwt.verify(accessTokenObj.accessToken, process.env.JWT_ACCESS_TOKEN_SECRET as string)
 
-        if (typeof verifiedToken === "string") {
-            throw new Error("Invalid token")
+        if (!verifiedToken || typeof verifiedToken === "string") {
+            throw new Error("Invalid or malformed token");
         }
 
         const userRole: UserRole = verifiedToken.role
-
-        if (!result.success) {
-            throw new Error(result.message || "Login failed")
-        }
 
         if (redirectTo) {
             const requestedPath = redirectTo.toString();
@@ -120,6 +112,12 @@ export const loginUser = async (_currentState: any, fromData: any) => {
             throw error
         }
         console.log(error);
-        return { error: "Login failed" }
+        return {
+            success: false,
+            message:
+                process.env.NODE_ENV === "development"
+                    ? error.message
+                    : "Login failed. You might have entered incorrect email or password.",
+        }
     }
 }
