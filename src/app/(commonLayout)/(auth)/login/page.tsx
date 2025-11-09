@@ -1,6 +1,12 @@
 import LoginFrom from '@/components/login-from';
 
-const LoginPage = () => {
+const LoginPage = async ({
+  searchParams,
+}: {
+  searchParams?: Promise<{ redirect?: string }>;
+}) => {
+  const { redirect } = await searchParams || {};
+
   return (
     <div>
       <div className='flex min-h-screen items-center justify-center'>
@@ -10,7 +16,7 @@ const LoginPage = () => {
             <p className='text-gray-500'>
               Enter your credentials to access your account
             </p>
-            <LoginFrom />
+            <LoginFrom redirect={redirect} />
           </div>
         </div>
       </div>
