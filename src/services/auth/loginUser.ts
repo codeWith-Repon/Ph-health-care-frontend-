@@ -4,10 +4,10 @@
 import { z } from "zod"
 import { parse } from "cookie"
 import { cookies } from "next/headers"
-import { NextResponse } from "next/server"
 import { JwtPayload } from "jsonwebtoken"
 import jwt from "jsonwebtoken"
 import { redirect } from "next/navigation"
+import { getDefaultDashboardRoute, isValidRedirectForRole, UserRole } from "@/lib/auth-utils"
 
 const loginValidationZodSchema = z.object({
     email: z.email({
@@ -48,8 +48,6 @@ export const loginUser = async (_currentState: any, fromData: any) => {
                 "Content-Type": "application/json"
             }
         })
-
-        const result = await res.json()
 
         const setCookieHeaders = res.headers.getSetCookie()
 
@@ -99,22 +97,17 @@ export const loginUser = async (_currentState: any, fromData: any) => {
             throw new Error("Invalid token")
         }
 
-        type UserRole = "ADMIN" | "DOCTOR" | "PATIENT"
-
         const userRole: UserRole = verifiedToken.role
 
-        const getDefaultDashboardRoute = (role: UserRole): string => {
-            if (role === "ADMIN") return "/admin/dashboard"
-            if (role === "DOCTOR") return "/doctor/dashboard"
-            if (role === "PATIENT") return "/dashboard"
-            return "/"
+        if (redirectTo) {
+            const requestedPath = redirectTo.toString();
+            if (isValidRedirectForRole(requestedPath, userRole)) {
+                redirect(requestedPath)
+            } else {
+                redirect(getDefaultDashboardRoute(userRole))
+            }
         }
 
-        const redirectPath = redirectTo ? redirectTo : getDefaultDashboardRoute(userRole)
-
-        redirect(redirectPath)
-
-        // return result
     } catch (error: any) {
         // Re-throw Next_redirect errors so next.js can handle then 
         if (error?.digest?.startsWith("NEXT_REDIRECT")) {

@@ -14,7 +14,7 @@ const LoginFrom = ({ redirect }: { redirect?: string }) => {
       const error = state.errors.find(
         (error: any) => error.field === fieldName
       );
-      return error.message;
+      return error?.message || null;
     } else {
       return null;
     }

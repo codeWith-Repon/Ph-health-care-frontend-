@@ -2,59 +2,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 import jwt, { JwtPayload } from "jsonwebtoken"
-
-type UserRole = "ADMIN" | "DOCTOR" | "PATIENT"
-
-// exact: ["/my-profile", "/settings"]
-// patterns: [/^\/dashboard\, /^\/patient/] //Routes start with  /dashboard/* or /patient/*
-
-type RouteConfig = {
-    exact: string[],
-    patterns: RegExp[]
-}
-
-const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"]
-
-const commonProtectedRoutes: RouteConfig = {
-    exact: ["/my-profile", "/settings"],
-    patterns: []
-}
-
-const doctorProtectedRoutes: RouteConfig = {
-    patterns: [/^\/doctor/],
-    exact: []
-}
-
-const adminProtectedRoutes: RouteConfig = {
-    patterns: [/^\/admin/],
-    exact: []
-}
-const patientProtectedRoutes: RouteConfig = {
-    patterns: [/^\/dashboard/],
-    exact: []
-}
-
-const isAuthRoute = (pathname: string) => authRoutes.some((route: string) => route === pathname)
-
-const isRouteMatches = (pathname: string, routes: RouteConfig): boolean => {
-    if (routes.exact.includes(pathname)) return true
-    return routes.patterns.some((pattern: RegExp) => pattern.test(pathname))
-}
-
-const getRouterOwner = (pathname: string): "ADMIN" | "DOCTOR" | "PATIENT" | "COMMON" | null => {
-    if (isRouteMatches(pathname, adminProtectedRoutes)) return "ADMIN"
-    if (isRouteMatches(pathname, doctorProtectedRoutes)) return "DOCTOR"
-    if (isRouteMatches(pathname, patientProtectedRoutes)) return "PATIENT"
-    if (isRouteMatches(pathname, commonProtectedRoutes)) return "COMMON"
-    return null
-}
-
-const getDefaultDashboardRoute = (role: UserRole): string => {
-    if (role === "ADMIN") return "/admin/dashboard"
-    if (role === "DOCTOR") return "/doctor/dashboard"
-    if (role === "PATIENT") return "/dashboard"
-    return "/"
-}
+import { getDefaultDashboardRoute, getRouteOwner, isAuthRoute, UserRole } from './lib/auth-utils'
 
 export async function proxy(request: NextRequest) {
     const cookieStore = await cookies()
@@ -74,7 +22,7 @@ export async function proxy(request: NextRequest) {
         userRole = verifiedToken.role
     }
 
-    const routerOwner = getRouterOwner(pathname)
+    const routerOwner = getRouteOwner(pathname)
 
     const isAuth = isAuthRoute(pathname)
     // Rule 1 : User is logged in and trying to access auth route. Redirect to default dashboard
