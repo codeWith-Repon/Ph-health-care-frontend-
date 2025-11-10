@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from './ui/field';
 import { Input } from './ui/input';
 import { loginUser } from '@/services/auth/loginUser';
+import { toast } from 'sonner';
 
 const LoginFrom = ({ redirect }: { redirect?: string }) => {
   const [state, fromAction, isPending] = useActionState(loginUser, null);
-  console.log('state', state);
+  
   const getFieldError = (fieldName: string) => {
     if (state && state.errors) {
       const error = state.errors.find(
@@ -19,6 +20,11 @@ const LoginFrom = ({ redirect }: { redirect?: string }) => {
       return null;
     }
   };
+
+  useEffect(() => {
+    if (state && !state.success) toast.error(state.message);
+  }, [state]);
+
   return (
     <form action={fromAction}>
       {redirect && <input type='hidden' name='redirect' value={redirect} />}
