@@ -22,7 +22,13 @@ const LoginFrom = ({ redirect }: { redirect?: string }) => {
   };
 
   useEffect(() => {
-    if (state && !state.success) toast.error(state.message);
+    if (state && !state.success) {
+      if (state.message === 'No record was found') {
+        toast.error('Email does not exist');
+      } else {
+        toast.error(state.message);
+      }
+    }
   }, [state]);
 
   return (
