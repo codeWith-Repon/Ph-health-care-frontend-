@@ -9,7 +9,7 @@ import InputFieldError from './shared/InputFieldError';
 
 const LoginFrom = ({ redirect }: { redirect?: string }) => {
   const [state, fromAction, isPending] = useActionState(loginUser, null);
-  console.log(state);
+
   useEffect(() => {
     if (!state || state.success) return;
 

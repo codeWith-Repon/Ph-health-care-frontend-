@@ -3,7 +3,7 @@
 
 import { serverFetch } from "@/lib/server-fetch";
 import { zodValidator } from "@/lib/zodValidator";
-import { createSpecialtyZodSchema } from "@/zod/specialties.validatio";
+import { createSpecialtyZodSchema } from "@/zod/specialties.validation";
 
 export async function createSpecialty(_prevState: any, formData: FormData) {
     try {
