@@ -1,31 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
-import z from "zod";
 import { loginUser } from "./loginUser";
-
-const registerValidationZodSchema = z.object({
-    name: z.string().min(1, { message: "Name is required" }),
-    address: z.string().optional(),
-    email: z.email({ message: "Valid email is required" }),
-    password: z.string().min(6, {
-        error: "Password is required and must be at least 6 characters long",
-    }).max(100, {
-        error: "Password must be at most 100 characters long",
-    }),
-    confirmPassword: z.string().min(6, {
-        error: "Confirm Password is required and must be at least 6 characters long",
-    }),
-}).refine((data: any) => data.password === data.confirmPassword, {
-    error: "Passwords do not match",
-    path: ["confirmPassword"],
-});
-
+import { serverFetch } from "@/lib/server-fetch";
+import { zodValidator } from "@/lib/zodValidator";
+import { registerPatientValidationZodSchema } from "@/zod/auth.validation";
 
 export const registerPatient = async (_currentState: any, formData: any): Promise<any> => {
     try {
 
-        const validationData = {
+        const payload = {
             name: formData.get('name'),
             address: formData.get('address'),
             email: formData.get('email'),
@@ -33,27 +17,35 @@ export const registerPatient = async (_currentState: any, formData: any): Promis
             confirmPassword: formData.get('confirmPassword'),
         }
 
-        const validatedFields = registerValidationZodSchema.safeParse(validationData);
+        // const validatedFields = registerValidationZodSchema.safeParse(validationData);
 
-        if (!validatedFields.success) {
-            return {
-                success: false,
-                errors: validatedFields.error.issues.map(issue => {
-                    return {
-                        field: issue.path[0],
-                        message: issue.message
-                    }
-                })
-            }
+        // if (!validatedFields.success) {
+        //     return {
+        //         success: false,
+        //         errors: validatedFields.error.issues.map(issue => {
+        //             return {
+        //                 field: issue.path[0],
+        //                 message: issue.message
+        //             }
+        //         })
+        //     }
+        // }
+
+
+        const validateResult = zodValidator(payload, registerPatientValidationZodSchema)
+
+        if (!validateResult.success) {
+            return validateResult
         }
 
-        const registerData = {
-            password: formData.get('password'),
-            patient: {
-                name: formData.get('name'),
-                email: formData.get('email'),
-                address: formData.get('address')
+        const validatedPayload: any = validateResult.data
 
+        const registerData = {
+            password: validatedPayload.password,
+            patient: {
+                name: validatedPayload.name,
+                email: validatedPayload.email,
+                address: validatedPayload.address
             }
         }
 
@@ -61,8 +53,11 @@ export const registerPatient = async (_currentState: any, formData: any): Promis
 
         newFromData.append("data", JSON.stringify(registerData))
 
-        const res = await fetch("http://localhost:5000/api/v1/user/create-patient", {
-            method: "POST",
+        if (formData.get("file")) {
+            newFromData.append("file", formData.get("file") as Blob)
+        }
+
+        const res = await serverFetch.post("/user/create-patient", {
             body: newFromData
         })
 

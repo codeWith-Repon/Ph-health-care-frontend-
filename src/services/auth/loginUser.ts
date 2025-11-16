@@ -1,20 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
-import { z } from "zod"
 import { parse } from "cookie"
 import { JwtPayload } from "jsonwebtoken"
 import jwt from "jsonwebtoken"
 import { redirect } from "next/navigation"
 import { getDefaultDashboardRoute, isValidRedirectForRole, UserRole } from "@/lib/auth-utils"
 import { setCookie } from "./tokenHandlers"
+import { serverFetch } from "@/lib/server-fetch"
+import { zodValidator } from "@/lib/zodValidator"
+import { loginValidationZodSchema } from "@/zod/auth.validation"
 
-const loginValidationZodSchema = z.object({
-    email: z.email({
-        error: "Email is required"
-    }),
-    password: z.string().min(6, "Password is required and must be at least 6 characters").max(100, "Password must be at most 100 characters")
-})
 export const loginUser = async (_currentState: any, fromData: any) => {
 
     try {
@@ -22,28 +18,39 @@ export const loginUser = async (_currentState: any, fromData: any) => {
         let accessTokenObj: null | any = null
         let refreshTokenObj: null | any = null
 
-        const loginData = {
+        const payload = {
             email: fromData.get('email'),
             password: fromData.get('password')
         }
 
-        const validatedFields = loginValidationZodSchema.safeParse(loginData);
+        // const validatedFields = loginValidationZodSchema.safeParse(loginData);
 
-        if (!validatedFields.success) {
+        // if (!validatedFields.success) {
+        //     return {
+        //         success: false,
+        //         errors: validatedFields.error.issues.map(issue => {
+        //             return {
+        //                 field: issue.path[0],
+        //                 message: issue.message
+        //             }
+        //         })
+        //     }
+        // }
+
+
+        const validateResult = zodValidator(payload, loginValidationZodSchema)
+
+        if (!validateResult.success) {
             return {
                 success: false,
-                errors: validatedFields.error.issues.map(issue => {
-                    return {
-                        field: issue.path[0],
-                        message: issue.message
-                    }
-                })
+                errors: validateResult.errors
             }
         }
 
-        const res = await fetch("http://localhost:5000/api/v1/auth/login", {
-            method: "POST",
-            body: JSON.stringify(loginData),
+        const validatedPayload = validateResult.data
+
+        const res = await serverFetch.post("/auth/login", {
+            body: JSON.stringify(validatedPayload),
             headers: {
                 "Content-Type": "application/json"
             }
