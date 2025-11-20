@@ -4,7 +4,7 @@ export interface IDoctor {
     email: string;
     password: string;
     contactNumber: string;
-    address: string;
+    address?: string;
     registrationNumber: string;
     experience?: number;
     gender: "MALE" | "FEMALE";
@@ -12,16 +12,19 @@ export interface IDoctor {
     qualification: string;
     currentWorkingPlace: string;
     designation: string;
-    profilePhoto?: string;
+    specialties?: string[];
+    profilePhoto?: File | string;
+    removeSpecialties?: string[];
     isDeleted?: boolean;
     averageRating?: number;
     createdAt?: string;
     updatedAt?: string;
     doctorSpecialties?: Array<{
+        specialitiesId: string;
         specialties?: {
             id: string;
             title: string;
             icon?: string;
         };
     }>;
-} 
+}
