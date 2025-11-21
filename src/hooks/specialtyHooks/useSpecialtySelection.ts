@@ -112,11 +112,6 @@ export const useSpecialtySelection = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, doctor?.id]);
 
-    useEffect(() => {
-        console.log("remove specialty id", removedSpecialtyIds);
-    }, [selectedSpecialtyIds, removedSpecialtyIds]);
-
-
     return {
         selectedSpecialtyIds,
         removedSpecialtyIds,
