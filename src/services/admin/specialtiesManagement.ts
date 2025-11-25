@@ -6,38 +6,54 @@ import { zodValidator } from "@/lib/zodValidator";
 import { createSpecialtyZodSchema } from "@/zod/specialties.validation";
 
 export async function createSpecialty(_prevState: any, formData: FormData) {
+
+    const validationPayload = {
+        title: formData.get("title") as string,
+        icon: formData.get("file") as File,
+    }
+
+    const validatedPayload = zodValidator(validationPayload, createSpecialtyZodSchema);
+
+    if (!validatedPayload.success && validatedPayload.errors) {
+        return {
+            success: false,
+            message: "Validation failed",
+            formData: validationPayload,
+            errors: validatedPayload.errors,
+        }
+    }
+
+    if (!validatedPayload.data) {
+        return {
+            success: false,
+            message: "Validation failed",
+            formData: validationPayload,
+        }
+    }
+
+    const newFormData = new FormData()
+    newFormData.append("data", JSON.stringify(validatedPayload.data))
+    newFormData.append("file", formData.get("file") as Blob)
+
     try {
-        const payload = {
-            title: formData.get('title') as string
-        }
+        const response = await serverFetch.post("/specialties", {
+            body: newFormData,
+        })
 
-        const validateResult = zodValidator(payload, createSpecialtyZodSchema)
-
-        if (!validateResult.success) {
-            return validateResult
-        }
-
-        const validatedPayload = validateResult.data
-
-        const newFormData = new FormData()
-        newFormData.append('data', JSON.stringify(validatedPayload))
-
-        if (formData.get("file")) {
-            newFormData.append('file', formData.get("file") as Blob)
-        }
-
-        const response = await serverFetch.post("/specialties", { body: newFormData })
 
         const result = await response.json();
 
-        return result
 
+        return result;
     } catch (error: any) {
         console.log(error);
-        return { success: false, message: `${process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'}` }
+        return {
+            success: false, message: `${process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'}`,
+            formData: validationPayload,
+        }
+
     }
 }
-
 
 export async function getSpecialties() {
     try {

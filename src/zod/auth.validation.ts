@@ -25,3 +25,16 @@ export const loginValidationZodSchema = z.object({
     }),
     password: z.string().min(6, "Password is required and must be at least 6 characters").max(100, "Password must be at most 100 characters")
 })
+
+
+export const resetPasswordSchema = z
+    .object({
+        newPassword: z.string().min(6, "Password must be at least 6 characters"),
+        confirmPassword: z
+            .string()
+            .min(6, "Password must be at least 6 characters"),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+        message: "Passwords don't match",
+        path: ["confirmPassword"],
+    });

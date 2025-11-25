@@ -64,20 +64,28 @@ export const loginUser = async (_currentState: any, fromData: any) => {
 
         const setCookieHeaders = res.headers.getSetCookie();
 
-        if (!setCookieHeaders) {
-            throw new Error("No Set-Cookie header found in response");
+        if (setCookieHeaders && setCookieHeaders.length > 0) {
+            setCookieHeaders.forEach((cookie: string) => {
+                const parsedCookie = parse(cookie);
+
+                if (parsedCookie['accessToken']) {
+                    accessTokenObj = parsedCookie;
+                }
+                if (parsedCookie['refreshToken']) {
+                    refreshTokenObj = parsedCookie;
+                }
+            })
+        } else {
+            throw new Error("No Set-Cookie header found");
         }
 
-        for (const cookie of setCookieHeaders) {
-            const parsed = parse(cookie);
-            if (parsed.accessToken) accessTokenObj = parsed;
-            if (parsed.refreshToken) refreshTokenObj = parsed;
+        if (!accessTokenObj) {
+            throw new Error("Tokens not found in cookies");
         }
 
-        if (!accessTokenObj || !refreshTokenObj) {
-            throw new Error("Missing authentication tokens in cookies");
+        if (!refreshTokenObj) {
+            throw new Error("Tokens not found in cookies");
         }
-
 
         await setCookie("accessToken", accessTokenObj.accessToken, {
             secure: true,
@@ -101,6 +109,19 @@ export const loginUser = async (_currentState: any, fromData: any) => {
         }
 
         const userRole: UserRole = verifiedToken.role
+
+        if (redirectTo && result.data.needPasswordChange) {
+            const requestedPath = redirectTo.toString();
+            if (isValidRedirectForRole(requestedPath, userRole)) {
+                redirect(`/reset-password?redirect=${requestedPath}`);
+            } else {
+                redirect("/reset-password");
+            }
+        }
+
+        if (result.data.needPasswordChange) {
+            redirect("/reset-password");
+        }
 
         if (redirectTo) {
             const requestedPath = redirectTo.toString();
