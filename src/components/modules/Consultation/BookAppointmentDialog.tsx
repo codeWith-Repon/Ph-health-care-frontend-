@@ -14,6 +14,7 @@ import { IDoctor } from '@/types/doctor.interface';
 import { IDoctorSchedule } from '@/types/schedule.interface';
 import { format } from 'date-fns';
 import { Calendar, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface BookAppointmentDialogProps {
@@ -27,6 +28,7 @@ export default function BookAppointmentDialog({
   isOpen,
   onClose,
 }: BookAppointmentDialogProps) {
+  const router = useRouter();
   const doctorSchedules = doctor.doctorSchedules || [];
   const [selectedSchedule, setSelectedSchedule] =
     useState<IDoctorSchedule | null>(null);
@@ -34,6 +36,14 @@ export default function BookAppointmentDialog({
   const handleCloseModal = () => {
     setSelectedSchedule(null);
     onClose();
+  };
+
+  const handleContinue = () => {
+    if (selectedSchedule) {
+      router.push(
+        `/dashboard/book-appointment/${doctor.id}/${selectedSchedule.schedule?.id}`
+      );
+    }
   };
 
   const groupSchedulesByDate = () => {
@@ -156,7 +166,16 @@ export default function BookAppointmentDialog({
           </div>
 
           <DialogFooter>
-            <Button onClick={handleCloseModal}>Close</Button>
+            <Button onClick={handleCloseModal} className='cursor-pointer'>
+              Close
+            </Button>
+            <Button
+              onClick={handleContinue}
+              className='disabled:opacity-80 cursor-pointer'
+              disabled={!selectedSchedule}
+            >
+              Continue
+            </Button>
           </DialogFooter>
         </>
       </DialogContent>
