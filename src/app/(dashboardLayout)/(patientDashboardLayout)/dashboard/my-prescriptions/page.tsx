@@ -1,9 +1,21 @@
-import React from 'react'
+import PatientPrescriptionsList from '@/components/modules/Patient/PatientPrescription/PatientPrescriptionList';
+import { getMyPrescriptions } from '@/services/patient/prescription.service';
+import { IPrescription } from '@/types/prescription.interface';
 
-const MyPrescriptionPage = () => {
+export default async function MyPrescriptionsPage() {
+  const response = await getMyPrescriptions();
+  const prescriptions: IPrescription[] = response?.data || [];
+
   return (
-    <div>MyPrescriptionPage</div>
-  )
-}
+    <div className='space-y-6'>
+      <div>
+        <h1 className='text-3xl font-bold tracking-tight'>My Prescriptions</h1>
+        <p className='text-muted-foreground mt-2'>
+          View all your medical prescriptions from completed appointments
+        </p>
+      </div>
 
-export default MyPrescriptionPage
+      <PatientPrescriptionsList prescriptions={prescriptions} />
+    </div>
+  );
+}
