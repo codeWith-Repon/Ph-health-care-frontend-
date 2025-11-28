@@ -6,8 +6,8 @@ import { IDoctorSchedule } from '@/types/schedule.interface';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { myScheduleColumns } from './myScheduleColumns';
 import { deleteDoctorOwnSchedule } from '@/services/doctor/doctorSchedule.services';
+import { myScheduleColumns } from './myScheduleColumns';
 
 interface MySchedulesTableProps {
   schedules: IDoctorSchedule[];
