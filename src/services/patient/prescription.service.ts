@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { serverFetch } from "@/lib/server-fetch";
 import { IPrescriptionFormData } from "@/types/prescription.interface";
+import { revalidateTag } from "next/cache";
 
 export async function createPrescription(data: IPrescriptionFormData) {
     try {
@@ -13,6 +14,12 @@ export async function createPrescription(data: IPrescriptionFormData) {
         });
 
         const result = await response.json();
+
+        if (result.success) {
+            revalidateTag('my-prescriptions', { expire: 0 });
+            revalidateTag('my-appointments', { expire: 0 });
+        }
+
         return result;
     } catch (error: any) {
         console.error("Error creating prescription:", error);
@@ -30,8 +37,15 @@ export async function createPrescription(data: IPrescriptionFormData) {
 export async function getMyPrescriptions(queryString?: string) {
     try {
         const response = await serverFetch.get(
-            `/prescription/my-prescription${queryString ? `?${queryString}` : ""}`
+            `/prescription/my-prescription${queryString ? `?${queryString}` : ""}`,
+            {
+                next: {
+                    tags: ["my-prescriptions"],
+                    revalidate: 300,
+                },
+            }
         );
+
         const result = await response.json();
         return result;
     } catch (error: any) {
@@ -51,7 +65,14 @@ export async function getMyPrescriptions(queryString?: string) {
 export async function getAllPrescriptions(queryString?: string) {
     try {
         const response = await serverFetch.get(
-            `/prescription${queryString ? `?${queryString}` : ""}`
+            `/prescription${queryString ? `?${queryString}` : ""}`,
+            {
+                next: {
+                    tags: ["prescriptions-list"],
+                    revalidate: 300, // 5 minutes
+                }
+            }
+
         );
         const result = await response.json();
         return result;

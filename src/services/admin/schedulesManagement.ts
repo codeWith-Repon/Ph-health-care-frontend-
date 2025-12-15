@@ -4,6 +4,7 @@
 import { serverFetch } from "@/lib/server-fetch";
 import { zodValidator } from "@/lib/zodValidator";
 import { createScheduleZodSchema } from "@/zod/schedule.validation";
+import { revalidateTag } from "next/cache";
 
 
 export async function createSchedule(_prevState: any, formData: FormData) {
@@ -59,6 +60,12 @@ export async function createSchedule(_prevState: any, formData: FormData) {
         });
 
         const result = await response.json();
+
+        if (result.success) {
+            revalidateTag('schedules-list', { expire: 0 });
+            revalidateTag('schedules-page-1', { expire: 0 });
+        }
+
         return result;
     } catch (error: any) {
         console.error("Create schedule error:", error);
@@ -72,7 +79,22 @@ export async function createSchedule(_prevState: any, formData: FormData) {
 
 export async function getSchedules(queryString?: string) {
     try {
-        const response = await serverFetch.get(`/schedule${queryString ? `?${queryString}` : ""}`);
+        const searchParams = new URLSearchParams(queryString);
+        const page = searchParams.get("page") || "1";
+        const searchTerm = searchParams.get("searchTerm") || "all";
+
+        const response = await serverFetch.get(`/schedule${queryString ? `?${queryString}` : ""}`, {
+            next: {
+                tags: [
+                    "schedules-list",
+                    `schedules-page-${page}`,
+                    `schedules-search-${searchTerm}`,
+                ],
+                // Reduced to 120s for more frequent updates on schedules
+                revalidate: 120,
+            },
+        });
+
         const result = await response.json();
         return result;
     } catch (error: any) {
@@ -87,7 +109,14 @@ export async function getSchedules(queryString?: string) {
 
 export async function getScheduleById(id: string) {
     try {
-        const response = await serverFetch.get(`/schedule/${id}`)
+        const response = await serverFetch.get(`/schedule/${id}`, {
+            next: {
+                tags: [`schedule-${id}`, "schedules-list"],
+                // Reduced to 180s for faster schedule detail updates
+                revalidate: 180,
+            }
+        })
+
         const result = await response.json();
         return result;
     } catch (error: any) {
@@ -104,6 +133,12 @@ export async function deleteSchedule(id: string) {
     try {
         const response = await serverFetch.delete(`/schedule/${id}`)
         const result = await response.json();
+
+        if (result.success) {
+            revalidateTag('schedules-list', { expire: 0 });
+            revalidateTag(`schedule-${id}`, { expire: 0 });
+        }
+
         return result;
     } catch (error: any) {
         console.log(error);

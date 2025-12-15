@@ -5,6 +5,7 @@ export interface IDoctor {
     name: string;
     email: string;
     password: string;
+    confirmPassword: string;
     contactNumber: string;
     address?: string;
     registrationNumber: string;
