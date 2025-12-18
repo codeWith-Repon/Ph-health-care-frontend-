@@ -2,13 +2,15 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserInfo } from '@/types/user.interface';
-import { Bell, Menu, Search } from 'lucide-react';
-import UserDropdown from './UserDropdown';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import DashboardMobileSidebar from './DashboardMobileSidebar';
 import { NavSection } from '@/types/dashboard.interface';
+import { UserInfo } from '@/types/user.interface';
+import { Menu, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import DashboardMobileSidebar from './DashboardMobileSidebar';
+import UserDropdown from './UserDropdown';
+import AISearchDialog from '@/components/shared/AISearchDialog';
+import NotificationDropdown from './NotificationDropdown';
 
 interface DashboardNavbarContentProps {
   userInfo: UserInfo;
@@ -22,11 +24,14 @@ const DashboardNavbarContent = ({
 }: DashboardNavbarContentProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkSmallerScreen = () => {
       setIsMobile(window.innerWidth < 768);
     };
+
     checkSmallerScreen();
     window.addEventListener('resize', checkSmallerScreen);
 
@@ -35,16 +40,30 @@ const DashboardNavbarContent = ({
     };
   }, []);
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      setAiDialogOpen(true);
+    }
+  };
+
+  const handleSearchIconClick = () => {
+    if (searchQuery.trim()) {
+      setAiDialogOpen(true);
+    }
+  };
+
   return (
     <header className='sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur'>
       <div className='flex h-16 items-center justify-between gap-4 px-4 md:px-6'>
+        {/* Mobile Menu Toggle */}
         <Sheet open={isMobile && isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild className='md:hidden'>
             <Button variant='outline' size='icon'>
               <Menu className='h-5 w-5' />
             </Button>
           </SheetTrigger>
-          <SheetContent side='left' className='w-64 p-0 '>
+          {/* Hide the overlay on medium and larger screens */}
+          <SheetContent side='left' className='w-64 p-0'>
             <DashboardMobileSidebar
               userInfo={userInfo}
               navItems={navItems || []}
@@ -53,23 +72,42 @@ const DashboardNavbarContent = ({
           </SheetContent>
         </Sheet>
 
-        {/* search bar */}
-        <div className='flex-1'>
-          <div className='relative'>
-            <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
-            <Input type='search' placeholder='Search...' className='pl-9' />
+        {/* Search Bar & AI Search */}
+        <div className='flex-1 flex items-center justify-end gap-2'>
+          {/* Search Input */}
+          <div className='relative w-full hidden sm:block'>
+            <Search
+              className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer'
+              onClick={handleSearchIconClick}
+            />
+            <Input
+              type='text'
+              placeholder='Search doctors by symptoms...'
+              className='pl-9 pr-4'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+            />
           </div>
+
+          {/* AI Search Dialog */}
+          <AISearchDialog
+            initialSymptoms={searchQuery}
+            externalOpen={aiDialogOpen}
+            onOpenChange={(open) => {
+              setAiDialogOpen(open);
+              if (!open) setSearchQuery('');
+            }}
+            onSearchComplete={() => setSearchQuery('')}
+          />
         </div>
 
-        {/* right side action */}
+        {/* Right Side Actions */}
         <div className='flex items-center gap-2'>
-          {/* notifications */}
-          <Button variant='outline' size='icon' className='relative'>
-            <Bell className='h-5 w-5' />
-            <span className='absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500' />
-          </Button>
+          {/* Notifications */}
+          <NotificationDropdown />
 
-          {/* user dropdown */}
+          {/* User Dropdown */}
           <UserDropdown userInfo={userInfo} />
         </div>
       </div>
