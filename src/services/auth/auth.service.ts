@@ -40,7 +40,7 @@ export async function updateMyProfile(formData: FormData) {
         if (result.success) {
             revalidateTag("user-info", { expire: 0 });
         }
-        
+
         return result;
     } catch (error: any) {
         console.log(error);
@@ -291,6 +291,7 @@ export async function forgotPassword(_prevState: any, formData: FormData) {
         });
 
         const result = await response.json();
+        console.log(result)
 
         if (!result.success) {
             throw new Error(result.message || "Failed to send reset link");
