@@ -1,5 +1,4 @@
 'use client';
-
 import InputFieldError from '@/components/shared/InputFieldError';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +28,7 @@ const SpecialitiesFormDialog = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(createSpecialty, null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const prevStateRef = useRef(state);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,11 +36,15 @@ const SpecialitiesFormDialog = ({
   };
 
   useEffect(() => {
-    if (state && state?.success) {
+    // Only process if state actually changed
+    if (state === prevStateRef.current) return;
+    prevStateRef.current = state;
+
+    if (state?.success) {
       toast.success(state.message);
       onSuccess();
       onClose();
-    } else if (state && !state.success) {
+    } else if (state && !state.success && state.message) {
       toast.error(state.message);
 
       if (selectedFile && fileInputRef.current) {
@@ -56,10 +60,10 @@ const SpecialitiesFormDialog = ({
       fileInputRef.current.value = '';
     }
     if (selectedFile) {
-      setSelectedFile(null); // Clear preview
+      setSelectedFile(null);
     }
-    formRef.current?.reset(); // Clear form
-    onClose(); // Close dialog
+    formRef.current?.reset();
+    onClose();
   };
 
   return (

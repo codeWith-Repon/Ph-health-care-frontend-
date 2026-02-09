@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { createAdmin, updateAdmin } from '@/services/admin/adminsManagement';
 import { IAdmin } from '@/types/admin.interface';
 import Image from 'next/image';
-import React, { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-interface AdminFormDialogProps {
+interface IAdminFormDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -26,22 +26,28 @@ const AdminFormDialog = ({
   onClose,
   onSuccess,
   admin,
-}: AdminFormDialogProps) => {
-  const isEdit = !!admin?.id;
+}: IAdminFormDialogProps) => {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isEdit = !!admin?.id;
+  //   const { isEditMode, state, formAction, isPending } = useAdminForm(admin);
+
   const [state, formAction, isPending] = useActionState(
     isEdit ? updateAdmin.bind(null, admin?.id as string) : createAdmin,
-    null
+    null,
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const prevStateRef = useRef(state);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setSelectedFile(file || null);
   };
 
+  // Handle success/error from server
   useEffect(() => {
+    if (state === prevStateRef.current) return;
+    prevStateRef.current = state;
     if (state?.success) {
       toast.success(state.message || 'Operation successful');
       if (formRef.current) {
@@ -64,14 +70,11 @@ const AdminFormDialog = ({
   const handleClose = () => {
     setSelectedFile(null);
     formRef.current?.reset();
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
     onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className='max-h-[90vh] flex flex-col p-0'>
         <DialogHeader className='px-6 pt-6 pb-4'>
           <DialogTitle>{isEdit ? 'Edit Admin' : 'Add New Admin'}</DialogTitle>
@@ -182,8 +185,8 @@ const AdminFormDialog = ({
               {isPending
                 ? 'Saving...'
                 : isEdit
-                ? 'Update Admin'
-                : 'Create Admin'}
+                  ? 'Update Admin'
+                  : 'Create Admin'}
             </Button>
           </div>
         </form>

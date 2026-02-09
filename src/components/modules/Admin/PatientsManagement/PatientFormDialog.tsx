@@ -1,6 +1,3 @@
-'use client';
-
-import { IPatient } from '@/types/patient.interface';
 import InputFieldError from '@/components/shared/InputFieldError';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,11 +8,12 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { useActionState, useEffect, useRef } from 'react';
 import { updatePatient } from '@/services/admin/patientsManagement';
+import { IPatient } from '@/types/patient.interface';
+import { useActionState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-interface PatientFormDialogProps {
+interface IPatientFormDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -27,14 +25,19 @@ const PatientFormDialog = ({
   onClose,
   onSuccess,
   patient,
-}: PatientFormDialogProps) => {
+}: IPatientFormDialogProps) => {
   const formRef = useRef<HTMLFormElement>(null);
+
   const [state, formAction, isPending] = useActionState(
     updatePatient.bind(null, patient?.id as string),
-    null
+    null,
   );
+  const prevStateRef = useRef(state);
 
+  // Handle success/error from server
   useEffect(() => {
+    if (state === prevStateRef.current) return;
+    prevStateRef.current = state;
     if (state?.success) {
       toast.success(state.message || 'Operation successful');
       if (formRef.current) {
@@ -85,7 +88,7 @@ const PatientFormDialog = ({
                 type='email'
                 placeholder='patient@example.com'
                 defaultValue={state?.formData?.email || patient?.email || ''}
-                disabled={!!patient?.email}
+                disabled={isPending}
               />
               <InputFieldError field='email' state={state} />
             </Field>
